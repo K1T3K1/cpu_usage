@@ -31,7 +31,6 @@ defmodule CPUCore do
     for current_core <- 0..(core_number-1)  do
       key_list = [:name, :user_proc, :nice, :system, :idle, :iowait, :irq, :softirq]
       struct!(CPUCore, Enum.zip(key_list, String.split(hd(Enum.fetch!(core_list, current_core)), " ", trim: true)))
-      |>Map.from_struct
     end
   end
 
