@@ -1,3 +1,3 @@
-defmodule CpuUsage.Printer do
+defmodule CPU.Printer do
 
 end

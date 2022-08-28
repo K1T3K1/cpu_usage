@@ -1,4 +1,4 @@
-defmodule CpuUsage.Reader do
+defmodule CPU.Reader do
   use Task
   @path "/proc/stat"
   @cores 7
@@ -13,11 +13,24 @@ defmodule CpuUsage.Reader do
     core_list = File.stream!(@path)
     |> Stream.map(&String.split(&1, "\n", trim: true))
     |> Enum.slice(0, @cores)
-    CPUCore.coresToStruct(core_list, @cores)
-    end
+    prevstruct = CPU.Core.coresToStruct(core_list, @cores)
+    Process.sleep(1000)
+    core_list = File.stream!(@path)
+    |> Stream.map(&String.split(&1, "\n", trim: true))
+    |> Enum.slice(0, @cores)
+    currentstruct = CPU.Core.coresToStruct(core_list, @cores)
+    send_cpu_info(prevstruct, currentstruct)
+    loop()
+  end
+
+  defp send_cpu_info(prevstruct, currentstruct) do
+    CPU.Analyzer.req_analysis(CPUAnalyzer, {prevstruct, currentstruct})
+    {:ok, :normal}
+  end
+
 end
 
-defmodule CPUCore do
+defmodule CPU.Core do
   defstruct [:name,
   :user_proc,
   :nice,
@@ -30,7 +43,7 @@ defmodule CPUCore do
   def coresToStruct(core_list, core_number) do
     for current_core <- 0..(core_number-1)  do
       key_list = [:name, :user_proc, :nice, :system, :idle, :iowait, :irq, :softirq]
-      struct!(CPUCore, Enum.zip(key_list, String.split(hd(Enum.fetch!(core_list, current_core)), " ", trim: true)))
+      struct!(CPU.Core, Enum.zip(key_list, String.split(hd(Enum.fetch!(core_list, current_core)), " ", trim: true)))
     end
   end
 

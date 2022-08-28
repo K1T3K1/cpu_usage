@@ -1,4 +1,4 @@
-defmodule CpuUsage.Application do
+defmodule CPU.Application do
 use Application
 
   @moduledoc """
@@ -9,7 +9,8 @@ Provides app keepup
 def start(_type, _args) do
   Supervisor.start_link(
   [
-    CpuUsage.Reader
+    CPU.Reader,
+    CPU.Analyzer
   ],
   strategy: :one_for_one
   )
