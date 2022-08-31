@@ -10,7 +10,8 @@ def start(_type, _args) do
   Supervisor.start_link(
   [
     CPU.Reader,
-    CPU.Analyzer
+    CPU.Analyzer,
+    CPU.Printer
   ],
   strategy: :one_for_one
   )

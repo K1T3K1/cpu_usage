@@ -6,7 +6,7 @@ defmodule CPU.Analyzer do
   end
 
   def req_analysis(pid, {prev, current}) do
-    GenServer.cast(pid, {:request, prev, current})
+    GenServer.cast(pid, {:analyze, prev, current})
   end
 
 
@@ -14,30 +14,34 @@ defmodule CPU.Analyzer do
     {:ok, state, 2000}
   end
 
-  def handle_cast({:request, prev, current}, _state) do
-    # __TODO__
-    #prev and current are lists each containing all cores
-    #gotta split those lists, then map from structs and calculate vals and usages latter
-
-    prev = Map.from_struct(prev)
-    current = Map.from_struct(current)
-    calculate_usage(prev, current)
+  def handle_cast({:analyze, prev, current}, _state) do
+    analyze_data(prev, current)
     {:noreply, :ok}
   end
 
-  @spec calculate_usage(nil | maybe_improper_list | map, nil | maybe_improper_list | map) :: :ok
-  def calculate_usage(prevstruct, currentstruct) do
-    prev_map = calc_vals(prevstruct)
-    current_map = calc_vals(currentstruct)
-    totald = current_map[:total] - prev_map[:total]
-    idled = current_map[:idle] - prev_map[:idle]
-    IO.puts(((totald - idled)/totald)*100)
+  def analyze_data(prev, current) do
+    CPU.Printer.display_usage(CPUPrinter, process_data(prev, current))
   end
 
+  def process_data(prev_list, current_list) do
+    for current_core <- 0..length(prev_list)-1 do
+      prev_map = calc_vals(Enum.fetch!(prev_list, current_core))
+      current_map = calc_vals(Enum.fetch!(current_list, current_core))
+      calc_usage(prev_map, current_map, current_core)
+    end
+  end
+
+
   def calc_vals(struct) do
-    idle = struct[:idle] + struct[:iowait]
-    active = struct[:user_proc] + struct[:nice] + struct[:system] + struct[:irq] + struct[:softirq]
+    parsed_struct = Enum.into(Enum.map(Map.delete(Map.from_struct(struct), :name), fn {key, value} -> {key, elem(Integer.parse(value, 10), 0)} end), %{})
+    idle = parsed_struct[:idle] + parsed_struct[:iowait]
+    active = parsed_struct[:user_proc] + parsed_struct[:nice] + parsed_struct[:system] + parsed_struct[:irq] + parsed_struct[:softirq]
     %{idle: idle, active: active, total: idle + active}
   end
 
+  def calc_usage(prev_core, current_core, core_number) do
+      totald = current_core[:total] - prev_core[:total]
+      idled = current_core[:idle] - prev_core[:idle]
+      %{core: core_number, usage: (((totald - idled)/totald)*100)}
+  end
 end

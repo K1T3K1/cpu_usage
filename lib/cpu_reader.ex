@@ -25,7 +25,6 @@ defmodule CPU.Reader do
 
   defp send_cpu_info(prevstruct, currentstruct) do
     CPU.Analyzer.req_analysis(CPUAnalyzer, {prevstruct, currentstruct})
-    {:ok, :normal}
   end
 
 end
